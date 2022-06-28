@@ -1,0 +1,102 @@
+@inject IEnvironmentValueService EnvironmentValueService;
+@inject ModalService ModalService;
+@inject ConfigurationService ConfigurationService;
+@inject IJSRuntime JsRuntime;
+
+@if (ConfigurationObjectValue != null)
+{
+    <EditForm Model="@ConfigurationObjectValue" OnValidSubmit="@OnSave">
+
+        <div class="row">
+
+            <div class="col-sm-12">
+                @if (ConfigurationObjectValue.ModuleEnvironmentValues != null && ConfigurationObjectValue.ModuleEnvironmentValues.Count() > 0)
+                {
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="configuration-object-header">
+                                <h4>@ConfigurationObjectValue.Name</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="alert alert-secondary" role="alert">
+                                @@Modal.@ConfigurationObjectValue.FullName
+                                <button type="button" class="close">
+                                    <span class="oi oi-clipboard" @onclick="@CopyToClipBoard"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    @foreach (var moduleEnvironmentValue in ConfigurationObjectValue.ModuleEnvironmentValues)
+                    {
+                        <div class="form-group row">
+                            <label for="staticEmail" class="col-sm-2 col-form-label">@moduleEnvironmentValue.EnvironmentName</label>
+                            <div class="col-sm-10">
+                                @if (SystemModel.RoleLevel.CanViewSecrets() && moduleEnvironmentValue.EnvironmentSecretEnabled && moduleEnvironmentValue.IsSecret)
+                                {
+                                    <input type="text" @bind="@moduleEnvironmentValue.Value" class="form-control" />
+                                }
+                                else if (moduleEnvironmentValue.EnvironmentSecretEnabled && moduleEnvironmentValue.IsSecret)
+                                {
+                                    <label class="form-control-plaintext">XXXXXXXXXXXXXXXXXXXXXXXXXX</label>
+                                }
+                                else if (SystemModel.RoleLevel.CanWrite())
+                                {
+                                    <input type="text" @bind="@moduleEnvironmentValue.Value" class="form-control" />
+                                }
+                                else
+                                {
+                                    <input type="text" readonly class="form-control" @bind="@moduleEnvironmentValue.Value" />
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+
+            </div>
+        </div>
+        <div class="bm-btn-holder">
+            <button type="submit" class="btn btn-outline-primary">Save</button>
+        </div>
+    </EditForm>
+
+}
+
+@code {
+    ConfigurationObjectValue ConfigurationObjectValue;
+
+    SystemModel SystemModel;
+
+    protected override async Task OnInitAsync()
+    {
+        var configurationObjectModal = ModalService.SelectedConfigurationObjectModel;
+        SystemModel = ModalService.SelectedSystem;
+
+        var environmentValues = await EnvironmentValueService.GetConfigurationObjectValueAsync(configurationObjectModal.Id, SystemModel.TopParentId ?? SystemModel.Id);
+
+        ConfigurationObjectValue = new ConfigurationObjectValue
+        {
+            ObjectId = configurationObjectModal.Id,
+            Name = configurationObjectModal.Name,
+            FullName = configurationObjectModal.FullName,
+            ModuleEnvironmentValues = environmentValues
+        };
+
+        base.OnInit();
+    }
+
+    private async Task OnSave()
+    {
+        await ConfigurationService.SaveEnvironmentValuesAsync(ConfigurationObjectValue.ObjectId, ConfigurationObjectValue.ModuleEnvironmentValues);
+        ModalService.Close();
+    }
+
+    private async Task CopyToClipBoard()
+    {
+        var fullName = $"@Modal.{ConfigurationObjectValue.FullName}";
+
+        await JsRuntime.InvokeAsync<bool>("copyToClipboard", fullName);
+    }
+}

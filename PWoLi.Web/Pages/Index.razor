@@ -1,0 +1,184 @@
+﻿@page "/"
+
+@inject SearchService SearchService;
+@inject RoleLevelService _roleLevelService;
+@inject ModalService ModalService;
+<div class="row">
+    <div class="col-sm-12">
+        <div class="dropdown">
+            @if (selectedSystemModel == null)
+            {
+                <div class="input-group">
+                    <input type="text" @bind-value:event="oninput" @bind-value="@SearchText" placeholder="Search.." class="form-control" @onfocusin="@OnSearchFocusIn" @onfocusout="@OnSearchFocusOut" />
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <strong>@selectedSystemModel.Name</strong>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close" @onclick="@OnSelectionClosed">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            }
+            @if (IsSearchFocused)
+            {
+                <div class="dropdown-content fade show">
+                    <div data-ui-css-component="treeview">
+                        <ul>
+                            @if (systemModels != null)
+                            {
+                                @foreach (var systeModel in systemModels)
+                                {
+                                    <SystemModelDisplay SystemModel="@systeModel" OnCheck="@SystemChecked" />
+                                }
+                            }
+                        </ul>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+@if (selectedSystemModel != null)
+{
+    <div class="configuration-objects">
+        <div class="row">
+            <div class="offset-2 col-sm-8">
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend search-icon">
+                        <span class="oi oi-magnifying-glass" id="basic-addon1"></span>
+                    </div>
+                    <input type="text"  @bind-value:event="oninput" @bind-value="@SearchConfigurationText" class="form-control" placeholder="Search" aria-describedby="basic-addon1"/>
+                </div>
+            </div>
+            <div class="col-sm-2">
+                @if (selectedSystemModel.RoleLevel.CanWrite())
+                {
+                    <a class="btn btn-info btn-xs" @onclick="@AddNewConfigurationObject">
+                        <span class="oi oi-plus white-button"> Add</span>
+                    </a>
+                }
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-12">
+                @if (ConfigurationObjectModels != null)
+                {
+                    <div class="tree">
+                        <ul>
+                            @foreach (var configurationObjectModel in ConfigurationObjectModels)
+                            {
+                                <ConfigurationObjectDisplay ConfigurationObjectModel="@configurationObjectModel" />
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code{
+    IEnumerable<SystemModel> systemModels = null;
+
+    RoleLevelService roleLevelService = null;
+
+    SystemModel selectedSystemModel = null;
+
+    bool IsSearchFocused = false;
+
+    private string _searchText = "";
+
+    public string SearchText
+    {
+        get
+        {
+            return _searchText;
+        }
+        set
+        {
+            _searchText = value;
+            SearcAsync(_searchText);
+        }
+    }
+
+    private string _searchConfigurationText;
+
+    public string SearchConfigurationText
+    {
+        get
+        {
+            return _searchConfigurationText;
+        }
+        set
+        {
+            _searchConfigurationText = value;
+            SearcConfigurationAsync(_searchConfigurationText);
+        }
+    }
+
+
+    IEnumerable<ConfigurationObjectModel> ConfigurationObjectModels = null;
+
+    protected override async Task OnInitAsync()
+    {
+        roleLevelService = _roleLevelService;
+
+        systemModels = await SearchService.SetService(roleLevelService).GetSystemModelsAsync(SearchText);
+    }
+
+    private async Task SearcAsync(string searchText)
+    {
+
+        systemModels = await SearchService.SetService(roleLevelService).GetSystemModelsAsync(searchText);
+        this.StateHasChanged();
+    }
+
+    private async Task SearcConfigurationAsync(string searchText)
+    {
+        ConfigurationObjectModels = await SearchService.GetConfigurationObjectModelsAsync(searchText,selectedSystemModel.Id);
+        this.StateHasChanged();
+    }
+
+    async Task SystemChecked(SystemModel systemModel)
+    {
+        selectedSystemModel = systemModel;
+        ConfigurationObjectModels = await SearchService.GetConfigurationObjectModelsAsync("", selectedSystemModel.Id);
+        IsSearchFocused = false;
+        ModalService.SelectedSystem = systemModel;
+    }
+
+    void OnSearchFocusIn()
+    {
+        IsSearchFocused = true;
+    }
+
+    async Task OnSearchFocusOut()
+    {
+        await Task.Delay(300);
+
+        IsSearchFocused = false;
+    }
+
+    void OnSelectionClosed()
+    {
+        selectedSystemModel = null;
+        ConfigurationObjectModels = null;
+        ModalService.SelectedSystem = null;
+    }
+
+    void AddNewConfigurationObject()
+    {
+        ModalService.SelectedSystem = selectedSystemModel;
+        ModalService.Show("", typeof(ConfigurationObjectsAddForm));
+        ModalService.OnClose -= LoadConfigurationObjects;
+        ModalService.OnClose += LoadConfigurationObjects;
+    }
+
+    async void LoadConfigurationObjects()
+    {
+        ConfigurationObjectModels = await SearchService.GetConfigurationObjectModelsAsync("", selectedSystemModel.Id);
+        StateHasChanged();
+    }
+}

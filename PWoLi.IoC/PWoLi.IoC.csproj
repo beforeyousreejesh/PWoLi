@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.Configuration.Abstractions">
+      <HintPath>..\..\..\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref\3.0.0-preview6.19307.2\ref\netcoreapp3.0\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
+      <HintPath>..\..\..\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref\3.0.0-preview6.19307.2\ref\netcoreapp3.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="GI.MedUw.SqlServer" Version="2.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PWoLi.Application.Contracts\PWoLi.Application.Contracts.csproj" />
+    <ProjectReference Include="..\PWoLi.Application\PWoLi.Application.csproj" />
+    <ProjectReference Include="..\PWoLi.DataAccess.Contracts\PWoLi.DataAccess.Contracts.csproj" />
+    <ProjectReference Include="..\PWoLi.DataAccess\PWoLi.DataAccess.csproj" />
+    <ProjectReference Include="..\PWoLi.Model\PWoLi.Model.csproj" />
+  </ItemGroup>
+</Project>

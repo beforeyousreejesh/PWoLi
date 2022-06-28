@@ -1,0 +1,39 @@
+@if (SystemModel != null)
+{
+<li>
+    <input type="checkbox" id="@SystemModel.Id" @onchange=@(eventArgs => { CheckboxClicked(SystemModel, eventArgs.Value); }) />
+    <label for="@SystemModel.Id">@SystemModel.Name</label>
+
+    @if (SystemModel.Childs != null && SystemModel.Childs.Count() > 0)
+        {
+    <ul>
+        @foreach (var childModel in SystemModel.Childs)
+                {
+        <SystemModelDisplay SystemModel="@childModel" OnCheck="@SystemChecked" />
+                }
+    </ul>
+        }
+</li>
+}
+
+@code {
+
+    [Parameter]
+    public SystemModel SystemModel { get; set; }
+
+    [Parameter]
+    public EventCallback<SystemModel> OnCheck { get; set; }
+
+    void CheckboxClicked(SystemModel systemModel, object checkedValue)
+    {
+        if ((bool)checkedValue)
+        {
+            OnCheck.InvokeAsync(systemModel);
+        }
+    }
+
+    void SystemChecked(SystemModel systemModel)
+    {
+        OnCheck.InvokeAsync(systemModel);
+    }
+}

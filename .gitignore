@@ -1,0 +1,8 @@
+/**/.vs
+/**/packages
+/packages
+/**/bin
+/**/Debug
+/**/*.suo
+/**/*.user
+/**/obj

@@ -1,0 +1,86 @@
+@using System.Text.RegularExpressions;
+
+@inject ModalService ModalService;
+@inject ClientSystemService ClientSystemService;
+
+<EditForm OnValidSubmit="@OnSave" EditContext="@EditContext">
+    <DataAnnotationsValidator />
+    @*<ValidationSummary />*@
+    <div class="tree">
+        <ul>
+            <SystemsAdd SystemModel="@systemModel" IsParent="true" />
+        </ul>
+    </div>
+    <div class="bm-btn-holder">
+        <button type="submit" class="btn btn-outline-primary">Submit</button>
+    </div>
+</EditForm>
+
+@code {
+    SystemModel systemModel = new SystemModel();
+
+    public EditContext EditContext { get; set; }
+
+    private bool IsValid = true;
+
+    async Task OnSave()
+    {
+        if (!IsValid)
+        {
+            IsValid = !IsValid;
+            return;
+        }
+
+        await ClientSystemService.InsertIntoSystemsAsync(systemModel);
+
+        ModalService.Close();
+    }
+
+    protected override void OnInit()
+    {
+        EditContext = new EditContext(systemModel);
+        EditContext.OnValidationRequested += (s, e) =>
+        {
+            var editContextModel = (SystemModel)((EditContext)s).Model;
+            IsValid = IsAnyInvalidName(editContextModel);
+        };
+    }
+
+    private bool IsAnyInvalidName(SystemModel models)
+    {
+        if (!IsValidName(models.Name))
+        {
+            return false;
+        }
+
+        if (models.Childs != null && models.Childs.Count > 0)
+        {
+            foreach (var model in models.Childs)
+            {
+                if (!IsAnyInvalidName(model))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private bool IsValidName(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return false;
+        }
+
+        Regex regex = new Regex("^[a-zA-Z]+$");
+
+        if (!regex.IsMatch(name))
+        {
+            return false;
+        }
+
+        return true;
+    }
+}

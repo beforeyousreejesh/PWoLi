@@ -1,0 +1,101 @@
+@if (ConfigurationObjectModel != null)
+{
+    <li>
+        <EditForm Model="@ConfigurationObjectModel">
+            <DataAnnotationsValidator />
+            <div class="tree-node">
+                <a class="btn btn-info btn-xs float-left" @onclick="@OnExpand">
+                    <span class="@(((ConfigurationObjectModel.Childs != null && ConfigurationObjectModel.Childs.Count() > 0)?isExpanded?"oi oi-chevron-bottom":"oi oi-chevron-right":"oi oi-key"))"></span>
+                </a>
+                <div class="validation-input float-left">
+                    <InputText @bind-Value="@ConfigurationObjectModel.Name" Class="invalid"></InputText>
+                    <ValidationMessage For="@(() => ConfigurationObjectModel.Name)" Class="tooltiptext" />
+                </div>
+
+                @if (!IsParent)
+                {
+                    <a class="btn btn-danger btn-xs float-right right-button" @onclick="@OnRemove">
+                        <span class="oi oi-trash"></span>
+                    </a>
+                }
+
+                <a class="btn btn-outline-info btn-xs float-right right-button" @onclick="@AddChild">
+                    <span class="oi oi-plus edit-button"></span>
+                </a>
+
+                @if (ConfigurationObjectModel.Childs == null || ConfigurationObjectModel.Childs.Count() <= 0)
+                {
+                    <div class="form-check float-right secret-check">
+                        <InputCheckbox Class="form-check-input" @bind-Value="@ConfigurationObjectModel.IsSecret"></InputCheckbox>
+                        <label class="form-check-label">Secret</label>
+                    </div>
+                }
+                <div class="clearfix"></div>
+            </div>
+        </EditForm>
+
+        @if (isExpanded)
+        {
+            @if (ConfigurationObjectModel.Childs != null && ConfigurationObjectModel.Childs.Count() > 0)
+            {
+                <ul>
+                    @foreach (var configurationObjectModelChild in ConfigurationObjectModel.Childs)
+                    {
+                        <ConfigurationObjectAdd ConfigurationObjectModel="@configurationObjectModelChild" ParentConfigurationObjectModel="@ConfigurationObjectModel" OnRefereshState="@RefereshParentState" IsParent="false"/>
+
+                    }
+                </ul>
+            }
+        }
+    </li>
+}
+
+@code {
+
+    [Parameter]
+    public ConfigurationObjectModel ConfigurationObjectModel { get; set; }
+
+    [Parameter]
+    public ConfigurationObjectModel ParentConfigurationObjectModel { get; set; }
+
+    [Parameter]
+    public EventCallback OnRefereshState { get; set; }
+
+    [Parameter]
+    public bool IsParent { get; set; }
+
+    private bool isExpanded = true;
+
+    void AddChild()
+    {
+        if (ConfigurationObjectModel.Childs == null)
+        {
+            ConfigurationObjectModel.Childs = new List<ConfigurationObjectModel>();
+        }
+
+        ConfigurationObjectModel.IsSecret = false;
+        ConfigurationObjectModel.Childs.Add(new ConfigurationObjectModel());
+    }
+
+    void OnExpand()
+    {
+        if (ConfigurationObjectModel.Childs != null && ConfigurationObjectModel.Childs.Count() > 0)
+        {
+            isExpanded = !isExpanded;
+        }
+    }
+
+    void OnRemove()
+    {
+        if (ParentConfigurationObjectModel != null && ParentConfigurationObjectModel.Childs != null && ParentConfigurationObjectModel.Childs.Count > 0)
+        {
+            ParentConfigurationObjectModel.Childs.Remove(ConfigurationObjectModel);
+            RefereshParentState();
+        }
+    }
+
+    void RefereshParentState()
+    {
+        OnRefereshState.InvokeAsync(new object());
+    }
+}

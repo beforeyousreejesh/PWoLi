@@ -1,0 +1,72 @@
+@page "/systems"
+
+@inject ISystemService SystemService;
+@inject ModalService ModalService;
+
+<div class="row">
+    <div class="offset-2 col-sm-8">
+        <div class="input-group mb-3">
+            <div class="input-group-prepend search-icon">
+                <span class="oi oi-magnifying-glass" id="basic-addon1"></span>
+            </div>
+            <input type="text" @bind-value:event="oninput" @bind-value="@SearchSystemsText" class="form-control" placeholder="Search" aria-describedby="basic-addon1" />
+        </div>
+    </div>
+    <div class="col-sm-2">
+        <a class="btn btn-info btn-xs" @onclick="@Add">
+            <span class="oi oi-plus white-button" > Add</span>
+        </a>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-12">
+        @if (SystemModels != null)
+        {
+            <div class="tree">
+                <ul>
+                    @foreach (var systemModel in SystemModels)
+                    {
+                        <SystemDisplay SystemModel="@systemModel" />
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+
+    IEnumerable<SystemModel> SystemModels;
+
+    private string _searchSystemsText;
+
+    public string SearchSystemsText
+    {
+        get
+        {
+            return _searchSystemsText;
+        }
+        set
+        {
+            _searchSystemsText = value;
+            SearchSystems(_searchSystemsText);
+        }
+    }
+
+
+    protected override async Task OnInitAsync()
+    {
+        SystemModels = await SystemService.GetSystemsAsync("");
+        await base.OnInitAsync();
+    }
+
+    public async Task Add()
+    {
+        ModalService.Show("", typeof(SystemsAddForm));
+    }
+
+    async Task SearchSystems(string systemNamePattern)
+    {
+        SystemModels = await SystemService.GetSystemsAsync(systemNamePattern);
+    }
+}

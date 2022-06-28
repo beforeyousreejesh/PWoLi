@@ -1,0 +1,91 @@
+@using System.Text.RegularExpressions;
+
+@inject ModalService ModalService;
+@inject ConfigurationService ConfigurationService;
+
+<EditForm OnValidSubmit="@OnSave" EditContext="@EditContext">
+    <DataAnnotationsValidator />
+    @*<ValidationSummary />*@
+    <div class="tree">
+        <ul>
+            <ConfigurationObjectAdd ConfigurationObjectModel="@configurationObjectModel" IsParent="true"/>
+        </ul>
+    </div>
+    <div class="bm-btn-holder">
+        <button type="submit" class="btn btn-outline-primary">Submit</button>
+    </div>
+</EditForm>
+
+@code {
+    ConfigurationObjectModel configurationObjectModel = new ConfigurationObjectModel();
+
+    public EditContext EditContext { get; set; }
+
+    private bool IsValid = true;
+
+    async Task OnSave()
+    {
+        if (!IsValid)
+        {
+            IsValid = !IsValid;
+            return;
+        }
+
+        await ConfigurationService.InsertConfigurationObjectAsync(configurationObjectModel, ModalService.SelectedSystem.Id);
+
+        ModalService.Close();
+    }
+
+    void OnInvalid()
+    {
+        var model = configurationObjectModel;
+    }
+
+    protected override void OnInit()
+    {
+        EditContext = new EditContext(configurationObjectModel);
+        EditContext.OnValidationRequested += (s, e) =>
+        {
+            var editContextModel = (ConfigurationObjectModel)((EditContext)s).Model;
+            IsValid = IsAnyInvalidName(editContextModel);
+        };
+    }
+
+    private bool IsAnyInvalidName(ConfigurationObjectModel models)
+    {
+        if (!IsValidName(models.Name))
+        {
+            return false;
+        }
+
+        if (models.Childs != null && models.Childs.Count > 0)
+        {
+            foreach (var model in models.Childs)
+            {
+                if (!IsAnyInvalidName(model))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private bool IsValidName(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return false;
+        }
+
+        Regex regex = new Regex("^[a-zA-Z]+$");
+
+        if (!regex.IsMatch(name))
+        {
+            return false;
+        }
+
+        return true;
+    }
+}

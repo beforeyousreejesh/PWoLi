@@ -1,0 +1,74 @@
+@inject ModalService ModalService;
+
+@if (ConfigurationObjectModel != null)
+{
+    <li>
+        <div class="tree-node">
+            <a class="btn btn-info btn-xs" @onclick="@OnExpand">
+                <span class="expandButton @((hasChild?isExpanded?"oi oi-chevron-bottom":"oi oi-chevron-right":"oi oi-key"))"></span>
+            </a>
+            @ConfigurationObjectModel.Name
+
+            @if (ConfigurationObjectModel.ParentObjectId == null)
+            {
+                <a class="btn btn-outline-info btn-xs float-right right-button" @onclick="@OnEdit">
+                    <span class="oi oi-pencil edit-button"></span>
+                </a>
+            }
+            @if (ConfigurationObjectModel.Childs == null || ConfigurationObjectModel.Childs.Count <= 0)
+            {
+                <a class="btn btn-outline-info btn-xs float-right right-button" @onclick="@OnEditValue">
+                    <span class="oi oi-key edit-button"></span>
+                </a>
+            }
+        </div>
+
+        @if (isExpanded)
+        {
+            @if (hasChild)
+            {
+                <ul>
+                    @foreach (var ConfigurationObjectModelChild in ConfigurationObjectModel.Childs)
+                    {
+                        <ConfigurationObjectDisplay ConfigurationObjectModel="@ConfigurationObjectModelChild" />
+                    }
+                </ul>
+            }
+        }
+    </li>
+}
+
+@code {
+
+    [Parameter]
+    public ConfigurationObjectModel ConfigurationObjectModel { get; set; }
+
+    private bool isExpanded;
+
+    private bool hasChild = false;
+
+    protected override async Task OnInitAsync()
+    {
+        if (ConfigurationObjectModel.Childs != null && ConfigurationObjectModel.Childs.Count() > 0)
+        {
+            hasChild = true;
+        }
+    }
+
+    void OnExpand()
+    {
+        isExpanded = !isExpanded;
+    }
+
+    void OnEdit()
+    {
+        ModalService.SelectedConfigurationObjectModel = ConfigurationObjectModel;
+        ModalService.Show("", typeof(ConfigurationObjectsEditForm));
+    }
+
+    void OnEditValue()
+    {
+        ModalService.SelectedConfigurationObjectModel = ConfigurationObjectModel;
+        ModalService.Show("", typeof(ConfigurationObjectValues));
+    }
+}

@@ -1,0 +1,142 @@
+@using System.Text.RegularExpressions;
+
+@inject ModalService ModalService;
+@inject ClientSystemService ClientSystemService;
+@inject IJSRuntime JsRuntime;
+
+@if (SystemModel != null)
+{
+
+    <div class="modal @((ShowConfirmation?"show-confirmation":""))">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <!-- Modal Header -->
+                <div class="modal-header">
+                    <h4 class="modal-title">Confirm delete</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+
+                <!-- Modal body -->
+                <div class="modal-body">
+                    Are you sure you want to delete?
+                </div>
+
+                <!-- Modal footer -->
+                <div class="modal-footer">
+                    <button type="button" class="btn" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick=@OnDelete>Delete</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <EditForm OnValidSubmit="@OnSave" EditContext="@EditContext">
+        <DataAnnotationsValidator />
+
+        <div class="tree">
+            <ul>
+                <SystemsEdit SystemModel="@SystemModel" />
+            </ul>
+        </div>
+        <div class="bm-btn-holder">
+            <button type="submit" class="btn btn-outline-primary float-right right-button">Save</button>
+            <div class="btn btn-outline-primary float-right right-button" @onclick="@(() => ConfirmDelete() )">Delete</div>
+            <div class="clearfix"></div>
+        </div>
+    </EditForm>
+}
+
+
+@code {
+
+    SystemModel SystemModel;
+
+    public EditContext EditContext { get; set; }
+
+    public bool ShowConfirmation { get; set; }
+
+    private bool IsValid = true;
+
+    async Task OnSave()
+    {
+        if (!IsValid)
+        {
+            IsValid = !IsValid;
+            return;
+        }
+
+        await ClientSystemService.UpdateSystemsAsync(SystemModel);
+
+        ModalService.Close();
+    }
+
+    protected override void OnInit()
+    {
+        SystemModel = ModalService.SelectedSystem;
+
+        EditContext = new EditContext(SystemModel);
+
+        EditContext.OnValidationRequested += (s, e) =>
+        {
+            var editContextModel = (SystemModel)((EditContext)s).Model;
+            IsValid = IsAnyInvalidName(editContextModel);
+        };
+
+    }
+
+    private bool IsAnyInvalidName(SystemModel models)
+    {
+        if (!IsValidName(models.Name))
+        {
+            return false;
+        }
+
+        if (models.Childs != null && models.Childs.Count > 0)
+        {
+            foreach (var model in models.Childs)
+            {
+                if (!IsAnyInvalidName(model))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private bool IsValidName(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return false;
+        }
+
+        Regex regex = new Regex("^[a-zA-Z]+$");
+
+        if (!regex.IsMatch(name))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool ConfirmDelete()
+    {
+        ShowConfirmation = true;
+        return false;
+    }
+
+    private async Task OnDelete()
+    {
+        ShowConfirmation = false;
+
+        await ClientSystemService.DeleteSystemsAsync(SystemModel);
+
+        ModalService.SelectedConfigurationObjectModel = null;
+        ModalService.Close();
+    }
+}

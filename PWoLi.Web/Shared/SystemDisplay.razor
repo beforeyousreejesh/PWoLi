@@ -1,0 +1,62 @@
+@inject ModalService ModalService;
+
+@if (SystemModel != null)
+{
+    <li>
+        <div class="tree-node">
+            <a class="btn btn-info btn-xs" @onclick="@OnExpand">
+                <span class="expandButton @((hasChild?isExpanded?"oi oi-chevron-bottom":"oi oi-chevron-right":"oi oi-folder"))"></span>
+            </a>
+            @SystemModel.Name
+
+            @if (SystemModel.ParentId == null)
+            {
+                <a class="btn btn-outline-info btn-xs float-right right-button" @onclick="@OnEdit">
+                    <span class="oi oi-pencil edit-button"></span>
+                </a>
+            }
+        </div>
+
+        @if (isExpanded)
+        {
+            @if (hasChild)
+            {
+                <ul>
+                    @foreach (var SystemModelChild in SystemModel.Childs)
+                    {
+                        <SystemDisplay SystemModel="@SystemModelChild" />
+                    }
+                </ul>
+            }
+        }
+    </li>
+}
+
+@code {
+
+    [Parameter]
+    public SystemModel SystemModel { get; set; }
+
+    private bool isExpanded;
+
+    private bool hasChild = false;
+
+    protected override async Task OnInitAsync()
+    {
+        if (SystemModel.Childs != null && SystemModel.Childs.Count() > 0)
+        {
+            hasChild = true;
+        }
+    }
+
+    void OnExpand()
+    {
+        isExpanded = !isExpanded;
+    }
+
+    void OnEdit()
+    {
+        ModalService.SelectedSystem = SystemModel;
+        ModalService.Show("", typeof(SystemsEditForm));
+    }
+}

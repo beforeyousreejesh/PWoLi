@@ -1,0 +1,97 @@
+@if (SystemModel != null && !SystemModel.IsDeleted)
+{
+    <li>
+        <EditForm Model="@SystemModel">
+            <DataAnnotationsValidator />
+            <div class="tree-node">
+                <a class="btn btn-info btn-xs float-left" @onclick="@OnExpand">
+                    <span class="@(((SystemModel.Childs != null && SystemModel.Childs.Count() > 0)?isExpanded?"oi oi-chevron-bottom":"oi oi-chevron-right":"oi oi-key"))"></span>
+                </a>
+                <div class="validation-input float-left">
+                    <InputText @bind-Value="@SystemModel.Name" Class="invalid"></InputText>
+                    <ValidationMessage For="@(() => SystemModel.Name)" Class="tooltiptext" />
+                </div>
+
+                @if (ParentSystemModel != null)
+                {
+                    <a class="btn btn-danger btn-xs float-right right-button" @onclick="@OnRemove">
+                        <span class="oi oi-trash"></span>
+                    </a>
+                }
+
+                <a class="btn btn-outline-info btn-xs float-right right-button" @onclick="@AddChild">
+                    <span class="oi oi-plus edit-button"></span>
+                </a>
+                <div class="clearfix"></div>
+            </div>
+        </EditForm>
+
+        @if (isExpanded)
+        {
+            @if (SystemModel.Childs != null && SystemModel.Childs.Count() > 0)
+            {
+                <ul>
+                    @foreach (var systemModelChild in SystemModel.Childs)
+                    {
+                        <SystemsEdit SystemModel="@systemModelChild" ParentSystemModel="@SystemModel" OnRefereshState="@RefereshParentState" />
+
+                    }
+                </ul>
+            }
+        }
+    </li>
+}
+
+@code {
+
+    [Parameter]
+    public SystemModel SystemModel { get; set; }
+
+    [Parameter]
+    public SystemModel ParentSystemModel { get; set; }
+    
+    [Parameter]
+    public EventCallback OnRefereshState { get; set; }
+
+    private bool isExpanded = true;
+
+    void AddChild()
+    {
+        if (SystemModel.Childs == null)
+        {
+            SystemModel.Childs = new List<SystemModel>();
+        }
+
+        SystemModel.Childs.Add(new SystemModel());
+    }
+
+    void OnExpand()
+    {
+        if (SystemModel.Childs != null && SystemModel.Childs.Count() > 0)
+        {
+            isExpanded = !isExpanded;
+        }
+    }
+
+    void OnRemove()
+    {
+        if (ParentSystemModel != null && ParentSystemModel.Childs != null && ParentSystemModel.Childs.Count > 0)
+        {
+            if (SystemModel.Id == Guid.Empty)
+            {
+                ParentSystemModel.Childs.Remove(SystemModel);
+            }
+            else
+            {
+                SystemModel.IsDeleted = true;
+            }
+
+            RefereshParentState();
+        }
+    }
+
+    void RefereshParentState()
+    {
+        OnRefereshState.InvokeAsync(new object());
+    }
+}
